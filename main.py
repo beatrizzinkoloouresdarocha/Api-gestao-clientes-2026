@@ -1,3 +1,5 @@
+from typing import Annotated
+
 import requests
 from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy.orm import Session
@@ -8,6 +10,9 @@ from database import Base, engine, get_db
 
 # Cria as tabelas no banco de dados ao iniciar
 Base.metadata.create_all(bind=engine)
+
+# Injeção de dependência moderna utilizando Annotated
+SessionDep = Annotated[Session, Depends(get_db)]
 
 app = FastAPI(
     title="API de Gestão de Clientes",
@@ -46,9 +51,7 @@ def buscar_endereco_por_cep(cep: str):
     response_model=schemas.ClienteResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def criar_cliente(
-    cliente_data: schemas.ClienteCreate, db: Session = Depends(get_db)
-):
+def criar_cliente(cliente_data: schemas.ClienteCreate, db: SessionDep):
     # Verifica se já existe cliente com o mesmo email
     cliente_existente = (
         db.query(models.Cliente)
@@ -66,7 +69,7 @@ def criar_cliente(
     # Instancia o novo cliente no banco
     novo_cliente = models.Cliente(
         nome=cliente_data.nome,
-        email=cliente_data.email,
+        email=str(cliente_data.email),
         cep=cliente_data.cep,
         logradouro=dados_endereco.get("logradouro"),
         bairro=dados_endereco.get("bairro"),
@@ -82,7 +85,7 @@ def criar_cliente(
 
 
 @app.get("/clientes", response_model=list[schemas.ClienteResponse])
-def listar_clientes(db: Session = Depends(get_db)):
+def listar_clientes(db: SessionDep):
     return db.query(models.Cliente).all()
 
 
@@ -90,7 +93,7 @@ def listar_clientes(db: Session = Depends(get_db)):
 def atualizar_cliente(
     cliente_id: int,
     cliente_data: schemas.ClienteCreate,
-    db: Session = Depends(get_db),
+    db: SessionDep,
 ):
     cliente = (
         db.query(models.Cliente)
@@ -106,13 +109,13 @@ def atualizar_cliente(
     # Consulta o ViaCEP para o novo CEP
     dados_endereco = buscar_endereco_por_cep(cliente_data.cep)
 
-    cliente.nome = cliente_data.nome
-    cliente.email = cliente_data.email
-    cliente.cep = cliente_data.cep
-    cliente.logradouro = dados_endereco.get("logradouro")
-    cliente.bairro = dados_endereco.get("bairro")
-    cliente.cidade = dados_endereco.get("localidade")
-    cliente.uf = dados_endereco.get("uf")
+    cliente.nome = cliente_data.nome  # type: ignore[assignment]
+    cliente.email = str(cliente_data.email)  # type: ignore[assignment]
+    cliente.cep = cliente_data.cep  # type: ignore[assignment]
+    cliente.logradouro = dados_endereco.get("logradouro")  # type: ignore[assignment]
+    cliente.bairro = dados_endereco.get("bairro")  # type: ignore[assignment]
+    cliente.cidade = dados_endereco.get("localidade")  # type: ignore[assignment]
+    cliente.uf = dados_endereco.get("uf")  # type: ignore[assignment]
 
     db.commit()
     db.refresh(cliente)

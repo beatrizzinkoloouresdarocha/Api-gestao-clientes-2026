@@ -1,9 +1,10 @@
 import requests
-from database import Base, engine, get_db
 from fastapi import Depends, FastAPI, HTTPException, status
+from sqlalchemy.orm import Session
+
 import models
 import schemas
-from sqlalchemy.orm import Session
+from database import Base, engine, get_db
 
 # Cria as tabelas no banco de dados ao iniciar
 Base.metadata.create_all(bind=engine)

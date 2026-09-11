@@ -1,15 +1,15 @@
 from database import Base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class Cliente(Base):
     __tablename__ = "clientes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    cep = Column(String, nullable=False)
-    logradouro = Column(String)
-    bairro = Column(String)
-    cidade = Column(String)
-    uf = Column(String)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    nome: Mapped[str] = mapped_column(nullable=False)
+    email: Mapped[str] = mapped_column(unique=True, index=True, nullable=False)
+    cep: Mapped[str] = mapped_column(nullable=False)
+    logradouro: Mapped[str | None] = mapped_column(default=None)
+    bairro: Mapped[str | None] = mapped_column(default=None)
+    cidade: Mapped[str | None] = mapped_column(default=None)
+    uf: Mapped[str | None] = mapped_column(default=None)

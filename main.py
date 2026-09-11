@@ -8,21 +8,21 @@ import models
 import schemas
 from database import Base, engine, get_db
 
-# Cria as tabelas no banco de dados ao iniciar
 Base.metadata.create_all(bind=engine)
 
-# Injeção de dependência moderna utilizando Annotated
 SessionDep = Annotated[Session, Depends(get_db)]
 
 app = FastAPI(
     title="API de Gestão de Clientes",
-    description="API com integração ViaCEP e armazenamento SQLite.",
+    description=(
+        "API para gerenciamento completo de clientes (CRUD) com "
+        "integração automática ao serviço ViaCEP e armazenamento SQLite."
+    ),
     version="1.0.0",
 )
 
 
 def buscar_endereco_por_cep(cep: str):
-    # Remove caracteres não numéricos do CEP
     cep_limpo = "".join(filter(str.isdigit, cep))
 
     if len(cep_limpo) != 8:
@@ -50,9 +50,10 @@ def buscar_endereco_por_cep(cep: str):
     "/clientes",
     response_model=schemas.ClienteResponse,
     status_code=status.HTTP_201_CREATED,
+    summary="Criar novo cliente",
+    description="Cadastra um novo cliente e consulta automaticamente o endereço pelo CEP via API ViaCEP.",
 )
 def criar_cliente(cliente_data: schemas.ClienteCreate, db: SessionDep):
-    # Verifica se já existe cliente com o mesmo email
     cliente_existente = (
         db.query(models.Cliente)
         .filter(models.Cliente.email == cliente_data.email)
@@ -63,10 +64,8 @@ def criar_cliente(cliente_data: schemas.ClienteCreate, db: SessionDep):
             status_code=400, detail="E-mail já cadastrado no sistema."
         )
 
-    # Consulta o ViaCEP
     dados_endereco = buscar_endereco_por_cep(cliente_data.cep)
 
-    # Instancia o novo cliente no banco
     novo_cliente = models.Cliente(
         nome=cliente_data.nome,
         email=str(cliente_data.email),
@@ -84,12 +83,22 @@ def criar_cliente(cliente_data: schemas.ClienteCreate, db: SessionDep):
     return novo_cliente
 
 
-@app.get("/clientes", response_model=list[schemas.ClienteResponse])
+@app.get(
+    "/clientes",
+    response_model=list[schemas.ClienteResponse],
+    summary="Listar todos os clientes",
+    description="Retorna a lista completa de clientes cadastrados no banco de dados.",
+)
 def listar_clientes(db: SessionDep):
     return db.query(models.Cliente).all()
 
 
-@app.put("/clientes/{cliente_id}", response_model=schemas.ClienteResponse)
+@app.put(
+    "/clientes/{cliente_id}",
+    response_model=schemas.ClienteResponse,
+    summary="Atualizar cliente por ID",
+    description="Atualiza os dados de um cliente existente e recalcula o endereço a partir do novo CEP.",
+)
 def atualizar_cliente(
     cliente_id: int,
     cliente_data: schemas.ClienteCreate,
@@ -106,7 +115,6 @@ def atualizar_cliente(
             status_code=404, detail="Cliente não encontrado."
         )
 
-    # Consulta o ViaCEP para o novo CEP
     dados_endereco = buscar_endereco_por_cep(cliente_data.cep)
 
     cliente.nome = cliente_data.nome  # type: ignore[assignment]

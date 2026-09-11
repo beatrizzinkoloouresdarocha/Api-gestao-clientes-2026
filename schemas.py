@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class ClienteCreate(BaseModel):
@@ -6,16 +6,36 @@ class ClienteCreate(BaseModel):
     email: EmailStr
     cep: str
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "nome": "Fernando Souza",
+                "email": "fernando.souza@email.com",
+                "cep": "01001000",
+            }
+        }
+    )
 
-class ClienteResponse(BaseModel):
+
+class ClienteResponse(ClienteCreate):
     id: int
-    nome: str
-    email: str
-    cep: str
-    logradouro: str | None
-    bairro: str | None
-    cidade: str | None
-    uf: str | None
+    logradouro: str | None = None
+    bairro: str | None = None
+    cidade: str | None = None
+    uf: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "nome": "Fernando Souza",
+                "email": "fernando.souza@email.com",
+                "cep": "01001000",
+                "logradouro": "Praça da Sé",
+                "bairro": "Sé",
+                "cidade": "São Paulo",
+                "uf": "SP",
+            }
+        },
+    )

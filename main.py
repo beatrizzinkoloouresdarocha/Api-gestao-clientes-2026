@@ -56,7 +56,7 @@ def buscar_endereco_por_cep(cep: str):
 def criar_cliente(cliente_data: schemas.ClienteCreate, db: SessionDep):
     cliente_existente = (
         db.query(models.Cliente)
-        .filter(models.Cliente.email == cliente_data.email)
+        .filter(models.Cliente.email == str(cliente_data.email))
         .first()
     )
     if cliente_existente:
@@ -114,6 +114,22 @@ def atualizar_cliente(
         raise HTTPException(
             status_code=404, detail="Cliente não encontrado."
         )
+
+    # Verifica se o e-mail mudou e se pertence a outro cliente cadastrado
+    if str(cliente_data.email) != cliente.email:
+        email_em_uso = (
+            db.query(models.Cliente)
+            .filter(
+                models.Cliente.email == str(cliente_data.email),
+                models.Cliente.id != cliente_id,
+            )
+            .first()
+        )
+        if email_em_uso:
+            raise HTTPException(
+                status_code=400,
+                detail="Este e-mail já está em uso por outro cliente.",
+            )
 
     dados_endereco = buscar_endereco_por_cep(cliente_data.cep)
 
